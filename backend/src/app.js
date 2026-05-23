@@ -18,7 +18,17 @@ const app = express();
 
 // Security
 app.use(helmet());
-app.use(cors({ origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000', credentials: true }));
+const allowedOrigins = (process.env.ALLOWED_ORIGIN || 'http://localhost:3000')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+}));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -70,8 +80,6 @@ const start = async () => {
   });
 };
 
-if (require.main === module) {
-  start();
-}
+start();
 
 module.exports = app;
